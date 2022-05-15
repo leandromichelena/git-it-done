@@ -1,4 +1,22 @@
 var issueContainerEl = document.querySelector("#issues-container");
+var limitWarningEl = document.querySelector("#limit-warning");
+var repoNameEl = document.querySelector("#repo-name");
+
+var getRepoName = function (){
+    // grab repo name from url query string
+    var queryString = document.location.search;
+    var repoName = queryString.split("=")[1];
+
+    if (repoName) { // if repoName exists
+        // display repo name on the page
+        repoNameEl.textContent = repoName;
+
+        getRepoIssues(repoName);
+    } else {
+        // if no repo was given, redirect to the homepage
+        document.location.replace("./index.html");
+    }
+};
 
 var getRepoIssues = function (repo) {
     var apiUrl = "https://api.github.com/repos/" + repo + "/issues?direction=asc";
@@ -6,11 +24,17 @@ var getRepoIssues = function (repo) {
         // request was successful
         if (response.ok) {
             response.json().then(function (data) {
-                displayIssues(data)
+                displayIssues(data);
+                // check if api has paginated issues
+                if (response.headers.get("Link")) {
+                    displayWarning(repo);
+                }
             });
         }
         else {
-            alert("There was a problem with your request!");
+            alert("Sorry, the page could not complete your request. Redirecting to the homepage.")
+            // if not successful, redirect to homepage
+            document.location.replace("./index.html");
         }
     });
 
@@ -21,7 +45,7 @@ var displayIssues = function (issues) {
         issueContainerEl.textContent = "This repo has no open issues!";
         return;
     }
-    
+
     for (var i = 0; i < issues.length; i++) {
         // create a link element to take users to the issue on github
         var issueEl = document.createElement("a");
@@ -53,4 +77,17 @@ var displayIssues = function (issues) {
     }
 };
 
-getRepoIssues("facebook/react");
+var displayWarning = function (repo) {
+    // add text to warning container
+    limitWarningEl.textContent = "To see more than 30 issues, visit ";
+
+    var linkEl = document.createElement("a");
+    linkEl.textContent = "See More Issues on GitHub.com";
+    linkEl.setAttribute("href", "https://github.com/" + repo + "/issues");
+    linkEl.setAttribute("target", "_blank");
+
+    // append to warning container
+    limitWarningEl.appendChild(linkEl);
+};
+
+getRepoName();
